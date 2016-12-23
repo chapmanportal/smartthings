@@ -1,5 +1,5 @@
 /**
- *  Chapman Fibaro RGBW Virtual Switch
+ *  Chapman Fibaro RGBW Virtual Routine Switch
  *
  *  Copyright 2016 chapmanportal
  *
@@ -27,10 +27,10 @@ definition(
 
 preferences {
 
-page(name: "pageOne", title: "Configure your Lighting", nextPage: "selectActions", uninstall: true) {
+page(name: "pageOne", title: "Configure your Lighting", nextPage: "selectRoutines", uninstall: true) {
 
 	section("Configure your Colour Switch:") {		
-        input "ledlight","device.fibaroRGBWController",title: "Choose your RGBW Light",required: true,multiple: true;
+        input "ledlight","capability.colorControl",title: "Choose your RGBW Light",required: true,multiple: true;
         
         input "onOff","enum",title: "Turn On or Off?", options: ["On","Off"],required: false,multiple: false;
 
@@ -40,25 +40,25 @@ page(name: "pageOne", title: "Configure your Lighting", nextPage: "selectActions
         
         label title: "Assign a name", required: false
         
-	}
-    
-}
-    
-    page(name: "selectActions")
-}
-    
-def selectActions() {
-    dynamicPage(name: "selectActions", title: "Select Routine Action to Execute", install: true, uninstall: true) {
+	}    
+}    
 
-        // get the available actions
-        def actions = location.helloHome?.getPhrases()*.label
-        if (actions) {
+    page(name: "selectRoutines")
+    
+}
+    
+def selectRoutines() {
+    dynamicPage(name: "selectRoutine", title: "Select Routine to Execute", install: true, uninstall: true) {
+
+        // get the available list of routines
+        def routines = location.helloHome?.getPhrases()*.label
+        if (routines) {
             // sort them alphabetically
-            actions.sort()
+            routines.sort()
             section("Select a Routine") {
-                log.trace actions
-                // use the actions as the options for an enum input
-                input "action", "enum", title: "Select a routine to trigger lighting", options: actions
+                log.trace routines
+                // use the routines list as the options for an enum input
+                input "routine", "enum", title: "Select a routine to trigger lighting", options: routines
             }
         }
     }
@@ -78,24 +78,36 @@ def updated() {
 }
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+	// Listen for routines that have been executes
     subscribe(location, "routineExecuted", routineChanged)    
 }
 
 def routineChanged(evt) {
-    log.debug "rountineChanged, triggerRoutine = $action, location.routineExecuted = $evt.displayName, pattern = $pattern1, onOff = $onOff"
+
+    log.debug "rountineChanged, triggerRoutine = $routine, location.routineExecuted = $evt.displayName, pattern = $pattern1, onOff = $onOff"
 	
-    if (action == evt.displayName) {
+    if (routine == evt.displayName) {
+    	//If Light is to be turned on, Set LED colour and brightness level.  If Fibaro light program is selected, then bypass level setting (this reverts light back to LED colour and cancels light program)
     	if (onOff == "On") {
         	log.debug"Setting Colour to $pattern1"
         	ledlight."$pattern1"()
-            if (pattern != "police") {
+            if (pattern1 != "police" && pattern1 != "fireplace" && pattern1 != "deepfade" && pattern1 != "litefade") {
             	log.debug"Setting Level to $level"
             	ledlight.setLevel(level as Integer)
             }
+            //If color set to "daylight" use RGB white and not White LED
+            if (pattern1 == "daylight") {
+            	ledlight.setColor(["hex":"#ffffff"])
+            	log.debug"Setting Level to $level"
+            	ledlight.setLevel(level as Integer)
+                ledlight.setWhiteLevel(0)
+            }
         } else {
+        	//Revert colour configuration back to White LED then turn off light
         	log.debug"Setting Colour to $pattern1 and turning Off"
         	ledlight."$pattern1"()
+            log.debug"Setting Light Color to White"
+            ledlight.setColor(["hex":"#ffffff"])
             ledlight.setWhiteLevel(0)
         	log.debug"Turn Off"
         	ledlight.off()
