@@ -41,7 +41,7 @@ page(name: "pageOne", title: "Configure your Lighting", nextPage: "selectRoutine
 }
     
 def selectRoutines() {
-    dynamicPage(name: "selectRoutine", title: "Select Routine to Execute", install: true, uninstall: true) {
+    dynamicPage(name: "selectRoutines", title: "Select Routine to Execute", install: true, uninstall: true) {
 
         // get the available list of routines
         def routines = location.helloHome?.getPhrases()*.label
