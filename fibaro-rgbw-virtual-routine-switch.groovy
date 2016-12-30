@@ -51,7 +51,7 @@ def selectRoutines() {
             section("Select a Routine") {
                 log.trace routines
                 // use the routines list as the options for an enum input
-                input "routine", "enum", title: "Select a routine to trigger lighting", options: routines
+                input "routines", "enum", title: "Select a routine to trigger lighting", options: routines,multiple:true;
             }
         }
     }
@@ -77,9 +77,10 @@ def initialize() {
 
 def routineChanged(evt) {
 
-    log.debug "rountineChanged, triggerRoutine = $routine, location.routineExecuted = $evt.displayName, pattern = $pattern1, onOff = $onOff"
+    log.debug "rountineChanged, triggerRoutine = $routines, location.routineExecuted = $evt.displayName, pattern = $pattern1, onOff = $onOff"
 	
-    if (routine == evt.displayName) {
+    
+if (routines.contains(evt.displayName) {
     	//If Light is to be turned on, Set LED colour and brightness level.  If Fibaro light program is selected, then bypass level setting (this reverts light back to LED colour and cancels light program)
     	if (onOff == "On") {
         	log.debug"Setting Colour to $pattern1"
